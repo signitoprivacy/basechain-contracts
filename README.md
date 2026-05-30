@@ -1,34 +1,24 @@
-# basechain-contracts
+# Signito Base Chain Contracts
 
-Smart contracts for Signito on Base.
+Smart contracts powering the Signito privacy protocol on Base mainnet.
 
-## Deployed Addresses
-
-### Base Mainnet (chain ID 8453)
+## Deployed Addresses (Base Mainnet)
 
 | Contract | Address |
 |---|---|
-| ShieldedETH (sETH) | `0xeafe4D8C26fA3696f657C20B7a270B34bb2a420A` |
-| SignitoPool | `0xD1ad99e67b40D1570cc70E57DC8475c00f39D461` |
+| ShieldedETH (sETH) | `0x8C7Eeb11C7c8D58b0d12A772B146313aaAAEaBdb` |
+| SignitoPool | `0xDD6A1A34eD412A439A2268863549C884C15D40C0` |
 | Relayer EOA | `0xf70494e69aE7090dB21179d2412D76566959B43c` |
 
-Verified on Basescan:
-- [ShieldedETH](https://basescan.org/address/0xeafe4D8C26fA3696f657C20B7a270B34bb2a420A#code)
-- [SignitoPool](https://basescan.org/address/0xD1ad99e67b40D1570cc70E57DC8475c00f39D461#code)
+Both contracts verified MIT on [BaseScan](https://basescan.org/address/0x8C7Eeb11C7c8D58b0d12A772B146313aaAAEaBdb#code).
 
-### Base Sepolia (chain ID 84532, reference)
+## Contracts
 
-| Contract | Address |
-|---|---|
-| ShieldedETH (sETH) | `0x0f497a7c81608A7dc071E2703813CE1811538D33` |
-| SignitoPool | `0xd344786B38bac0B644ff14D74a9822aAD761642e` |
+### ShieldedETH (sETH)
+Non-transferable ERC-20 backed 1:1 by ETH in SignitoPool. Only the pool can mint or burn. Includes `version()` returning `"1.0.0"`.
 
-## Build
-
-```bash
-npm install
-npx hardhat compile
-```
+### SignitoPool
+Privacy pool for ETH on Base. Implements shield, burnAndQueue, processQueue, batchAdminMint. Includes `version()` returning `"1.0.0"`.
 
 ## License
 

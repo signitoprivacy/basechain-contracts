@@ -359,4 +359,8 @@ contract SignitoPool {
         AirsignEscrow storage e = airsignEscrows[nonceHash];
         return (e.amount, e.voucherSigner, e.claimed, e.exists);
     }
+
+    function version() external pure returns (string memory) {
+        return "1.0.0";
+    }
 }
