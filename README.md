@@ -20,6 +20,12 @@ Non-transferable ERC-20 backed 1:1 by ETH in SignitoPool. Only the pool can mint
 ### SignitoPool
 Privacy pool for ETH on Base. Implements shield, burnAndQueue, processQueue, batchAdminMint. Includes `version()` returning `"1.0.0"`.
 
+## Privacy Model
+
+shield() mints sETH to both stokenAddress and msg.sender (user wallet). Total burn set: 22 accounts (stokenAddress + user wallet + 20 decoys). burnAndQueue has no stokenAddress param -- the shuffled array is passed and the contract identifies the real account via OTS hash match. processQueue is a separate transaction with zero accounts in common with burnAndQueue.
+
 ## License
 
 MIT
+
+https://signito.org
