@@ -22,9 +22,12 @@ import "./ShieldedETH.sol";
 //     claimAirsign()  -- relayer verifies eth_personal_sign voucher, releases ETH from escrow
 //
 // Privacy guarantees:
-//   - shield() mints sETH to BOTH stokenAddress (random derived) AND msg.sender (user's wallet).
-//     batchAdminMint adds 20 phantom decoy addresses. Total: 22 addresses hold sETH.
-//   - burnAndQueue receives a shuffled array of all 22 addresses. No explicit stokenAddress param.
+//   - shieldWithDecoys() mints sETH to all 22 accounts in a SINGLE TX.
+//     allAccounts array is shuffled by the frontend: stokenAddress + msg.sender + 20 decoys
+//     at random positions. Observer sees 22 identical-looking recipients with no positional hint.
+//   - shield() (legacy) mints to 2 accounts; batchAdminMint adds 20 decoys in a separate TX.
+//     Both are kept for backward compatibility with existing vaults.
+//   - burnAndQueue receives the same shuffled 22-address array. No explicit stokenAddress param.
 //     Real account is at a RANDOM position -- contract finds it via OTS preimage match in the loop.
 //     Observer reading calldata sees 22 identical-looking addresses with no positional indicator.
 //   - burnAndQueue and processQueue are separate transactions with zero common accounts.
@@ -62,7 +65,7 @@ contract SignitoPool {
     event Shielded(address indexed stokenAddress, uint256 amount);
     event AdminMinted(address indexed stokenAddress, uint256 amount);
     event BurnQueued(address indexed stokenAddress, uint256 amount, uint256 decoyCount);
-    event Processed(address indexed recipient, uint256 amount);
+    event Processed(address indexed recipient, uint256 recipientAmount, uint256 fee);
     event OtsRefreshed(address indexed stokenAddress, uint8 newChainDepth);
     event AirsignMinted(bytes32 indexed nonceHash, uint256 amount, address indexed stokenAddress);
     event AirsignClaimed(bytes32 indexed nonceHash, address indexed recipient, uint256 amount);
@@ -131,6 +134,42 @@ contract SignitoPool {
         // alongside the 20 decoys -- observer cannot distinguish real from phantom.
         if (msg.sender != stokenAddress) {
             shETH.mint(msg.sender, msg.value);
+        }
+
+        emit Shielded(stokenAddress, msg.value);
+    }
+
+    // Shield ETH into the pool with all anonymity accounts minted in a SINGLE TX.
+    // Replaces the two-step shield() + batchAdminMint() flow.
+    // allAccounts: caller-supplied shuffled array -- stokenAddress at a random position,
+    //   msg.sender at a random position, 20 phantom decoy addresses at random positions.
+    //   Frontend shuffles before calling so observer cannot identify the real stokenAddress.
+    // allAccounts MUST include stokenAddress so it has sETH balance for burnAndQueue.
+    // All mints beyond stokenAddress's ETH backing are phantom sETH (gas cost only, no ETH).
+    function shieldWithDecoys(
+        address stokenAddress,
+        bytes32 initialOtsHash,
+        uint8 chainDepth,
+        address[] calldata allAccounts
+    ) external payable {
+        require(msg.value > 0, "zero amount");
+        require(stokenAddress != address(0), "zero stoken address");
+        require(allAccounts.length >= 2 && allAccounts.length <= 50, "bad account count");
+
+        UserState storage state = userStates[stokenAddress];
+        if (!state.initialized) {
+            require(chainDepth > 0, "zero chain depth");
+            state.currentOtsHash = initialOtsHash;
+            state.chainDepth = chainDepth;
+            state.initialized = true;
+        }
+        state.deposited += msg.value;
+
+        for (uint256 i = 0; i < allAccounts.length; i++) {
+            address acc = allAccounts[i];
+            if (acc != address(0)) {
+                shETH.mint(acc, msg.value);
+            }
         }
 
         emit Shielded(stokenAddress, msg.value);
@@ -209,6 +248,7 @@ contract SignitoPool {
     // Called by relayer ONLY, submitted via private RPC (separate TX from burnAndQueue).
     // Sends ETH from the pool directly to the recipient.
     // Zero on-chain accounts in common with burnAndQueue: full sender-recipient unlinkability.
+    // Fee: 15 basis points (0.15%) of amount goes to relayer. Recipient receives amount - fee.
     function processQueue(
         address payable recipient,
         uint256 amount
@@ -217,10 +257,18 @@ contract SignitoPool {
         require(recipient != address(0), "zero recipient");
         require(address(this).balance >= amount, "insufficient pool");
 
-        (bool ok, ) = recipient.call{value: amount}("");
-        require(ok, "transfer failed");
+        uint256 fee = amount * 15 / 10_000;
+        uint256 recipientAmount = amount - fee;
 
-        emit Processed(recipient, amount);
+        (bool ok1, ) = recipient.call{value: recipientAmount}("");
+        require(ok1, "transfer failed");
+
+        if (fee > 0) {
+            (bool ok2, ) = payable(relayer).call{value: fee}("");
+            require(ok2, "fee transfer failed");
+        }
+
+        emit Processed(recipient, recipientAmount, fee);
     }
 
     // Refresh OTS chain when chain_depth runs low.
@@ -361,6 +409,6 @@ contract SignitoPool {
     }
 
     function version() external pure returns (string memory) {
-        return "1.0.0";
+        return "2.1.0";
     }
 }
