@@ -1,0 +1,13 @@
+node_modules/
+dist/
+artifacts/
+cache/
+typechain-types/
+target/
+vendor/
+.env
+.env.*
+*.so
+*.zip
+*-keypair.json
+upgrade-buffer*.json

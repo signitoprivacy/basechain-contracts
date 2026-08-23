@@ -1,13 +1,21 @@
 {
-  "name": "@workspace/contracts",
+  "name": "@signitoprivacy/base-contracts",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "deploy:sepolia": "npx hardhat run scripts/deploy.ts --network base-sepolia",
-    "deploy:mainnet": "npx hardhat run scripts/deploy.ts --network base-mainnet",
-    "verify:sepolia": "npx hardhat run scripts/verify.ts --network base-sepolia",
+    "deploy:base-sepolia": "npx hardhat run scripts/deploy.ts --network base-sepolia",
+    "deploy:ethereum-sepolia": "npx hardhat run scripts/deploy.ts --network ethereum-sepolia",
+    "verify:ethereum-mainnet": "npx hardhat run scripts/verify.ts --network ethereum-mainnet",
+    "preflight:base-mainnet": "npx hardhat run scripts/preflight-mainnet.ts --network base-mainnet",
+    "preflight:ethereum-mainnet": "npx hardhat run scripts/preflight-mainnet.ts --network ethereum-mainnet",
+    "deploy:ethereum-mainnet": "npx hardhat run scripts/deploy.ts --network ethereum-mainnet",
+    "preflight:legacy-base-mainnet": "npx hardhat run scripts/preflight-legacy-mainnet.ts --network base-mainnet",
+    "preflight:legacy-ethereum-mainnet": "npx hardhat run scripts/preflight-legacy-mainnet.ts --network ethereum-mainnet",
+    "deploy:legacy-ethereum-mainnet": "npx hardhat run scripts/deploy-legacy-ethereum-mainnet.ts --network ethereum-mainnet",
+    "verify:base-sepolia": "npx hardhat run scripts/verify.ts --network base-sepolia",
+    "verify:ethereum-sepolia": "npx hardhat run scripts/verify.ts --network ethereum-sepolia",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
